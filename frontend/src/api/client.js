@@ -7,7 +7,9 @@ export async function apiFetch(path, options = {}) {
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...(options.headers || {}),
   }
+  console.log("Current API URL:", API_BASE_URL);
   const res = await fetch(`${API_BASE_URL}${path}`, { ...options, headers })
+  
   if (res.status === 401) {
     localStorage.removeItem("access_token")
     window.location.href = "/login"

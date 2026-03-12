@@ -72,7 +72,7 @@ app.mount("/images", StaticFiles(directory=download_path), name="downloads")
 app.add_middleware(
     CORSMiddleware,
     # 部署後 localhost:5173 會失效，建議加上你 Render 的前端網址
-    allow_origins=["http://localhost:5173", "https://local-news-frontend-48mr.onrender.com/"], 
+    allow_origins=["http://localhost:5173", "https://local-news-frontend-48mr.onrender.com"], 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
