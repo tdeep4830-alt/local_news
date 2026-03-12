@@ -1,0 +1,74 @@
+name: Monorepo CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # --- 後端任務：Python Unit Test ---
+  backend-test:
+    runs-on: ubuntu-latest
+    # 只有當 backend 資料夾內的檔案有變動時才執行
+    if: github.event_name == 'push' || contains(github.event.head_commit.message, 'skip-ci') == false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2 # 為了偵測檔案變動
+
+      - name: Check for Backend changes
+        id: changed-backend
+        uses: tj-actions/changed-files@v44
+        with:
+          files: backend/**
+
+      - name: Set up Python
+        if: steps.changed-backend.outputs.any_changed == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Run Backend Unit Tests
+        if: steps.changed-backend.outputs.any_changed == 'true'
+        run: |
+          cd backend
+          pip install -r requirements.txt
+          pytest  # 執行你的自動化測試
+
+      - name: Trigger Render Backend Deploy
+        # 只有在 main branch 且測試通過、檔案有變動時才部署
+        if: github.ref == 'refs/heads/main' && steps.changed-backend.outputs.any_changed == 'true'
+        run: curl -X POST ${{ secrets.RENDER_BACKEND_DEPLOY_HOOK }}
+
+  # --- 前端任務：React Unit Test ---
+  frontend-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Check for Frontend changes
+        id: changed-frontend
+        uses: tj-actions/changed-files@v44
+        with:
+          files: frontend/**
+
+      - name: Set up Node.js
+        if: steps.changed-frontend.outputs.any_changed == 'true'
+        uses: actions/setup-python@v5 # 修正：應使用 setup-node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run Frontend Unit Tests
+        if: steps.changed-frontend.outputs.any_changed == 'true'
+        run: |
+          cd frontend
+          npm install
+          npm test -- --watchAll=false
+
+      - name: Trigger Render Frontend Deploy
+        if: github.ref == 'refs/heads/main' && steps.changed-frontend.outputs.any_changed == 'true'
+        run: curl -X POST ${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK }}
