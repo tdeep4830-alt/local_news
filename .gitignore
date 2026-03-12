@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+myvenv/
+.env
+*.db
+
+# Secrets / credentials
+api/.env
+script/token.json
+script/credentials.json
+credentials.json
+token.json
+cloudconvert.txt
+
+# Downloads / generated assets
+downloads/
+
+# macOS
+.DS_Store
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# Pytest cache
+.pytest_cache/
