@@ -17,7 +17,8 @@ export default function LoginPage() {
     setLoading(true)
     setError("")
     try {
-      const res = await fetch("http://localhost:8001/api/auth/login", {
+      const base = import.meta.env.VITE_API_BASE_URL || "http://localhost:8001"
+      const res = await fetch(`${base}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({ username, password }),
