@@ -16,6 +16,7 @@ from datetime import datetime, timedelta
 from jose import JWTError, jwt
 import bcrypt
 from dotenv import load_dotenv
+from script.news_db import init_db
 
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -44,6 +45,12 @@ async def run_pipelines():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    try:
+        print("🔧 正在初始化資料庫...")
+        init_db()
+        print("✅ 資料庫初始化完成")
+    except Exception as e:
+        print(f"❌ 資料庫初始化失敗: {e}")
     # 啟動時執行
     task = asyncio.create_task(run_pipelines())
     yield

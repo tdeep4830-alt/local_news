@@ -1,15 +1,28 @@
-import sqlite3
 from datetime import datetime
+from psycopg2.extras import RealDictCursor
+import os
+import psycopg2
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+def get_db_connection():
+    """獲取資料庫連接"""
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        return conn
+    except Exception as e:
+        print(f"❌ 無法連接到資料庫: {e}")
+        return None
 
 def init_db():
     """初始化資料庫，建立新聞表"""
-    conn = sqlite3.connect('news_system.db')
+    conn = get_db_connection()
     cursor = conn.cursor()
     
-    # 建立一個 Table，包含原文、翻譯、狀態和時間戳
+    # 修正：AUTOINCREMENT 改為 SERIAL, DATETIME 改為 TIMESTAMP
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS news (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             original_title TEXT,
             original_content TEXT,
             translated_title TEXT,
@@ -19,22 +32,23 @@ def init_db():
             area TEXT,
             source TEXT,
             source_url TEXT,
-            status TEXT DEFAULT 'PENDING', -- 狀態：PENDING, APPROVED, POSTED, REJECTED
-            created_at DATETIME,
-            last_updated DATETIME,
-            breaking INTEGER DEFAULT 0  -- 0 為 False, 1 為 True
+            status TEXT DEFAULT 'PENDING',
+            created_at TIMESTAMP,
+            last_updated TIMESTAMP,
+            breaking INTEGER DEFAULT 0
         )
     ''')
     conn.commit()
+    cursor.close()
     conn.close()
-    print("✅ Database 初始化成功")
+    print("✅ [Observability] Supabase Database 初始化成功")
 
 def add_column_to_news(column_name, column_type="TEXT"):
     """
     動態為 news 表添加新 Column
     """
-    conn = sqlite3.connect('./news_system.db')
-    cursor = conn.cursor()
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
     try:
         # SQLite 唔支援一次加多個 Column，所以要分開做
         cursor.execute(f"ALTER TABLE news ADD COLUMN {column_name} {column_type}")
@@ -45,20 +59,24 @@ def add_column_to_news(column_name, column_type="TEXT"):
     finally:
         conn.close()
 
+        
 def save_news(data: dict):
-    """改為接收 Dictionary，擴展性更好"""
-    conn = sqlite3.connect('./news_system.db')
+    """保存新聞並返回新產生的 ID"""
+    conn = get_db_connection()
+    # 注意：RealDictCursor 通常用於查詢，Insert 建議用預設 cursor 獲取單個值
     cursor = conn.cursor()
-    now = datetime.now().isoformat()
+    now = datetime.now()
     
-    # 修正：確保 columns 同 values 數量完全對應 (11個)
+    # 修正 1：佔位符全部改為 %s
+    # 修正 2：結尾加入 RETURNING id
     query = '''
         INSERT INTO news (
             original_title, original_content, translated_title, shortened_title, 
             translated_content, image_path, area, source_url, 
             source, created_at, last_updated, breaking
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        RETURNING id
     '''
     
     params = (
@@ -78,19 +96,21 @@ def save_news(data: dict):
     
     try:
         cursor.execute(query, params)
-        last_id = cursor.lastrowid
+        # 修正 3：獲取剛剛產生的 ID
+        new_id = cursor.fetchone()[0]
         conn.commit()
-        return last_id
+        return new_id
     except Exception as e:
-        print(f"❌ 儲存資料庫失敗: {e}")
+        print(f"❌ [Observability] 儲存 Supabase 失敗: {e}")
         return None
     finally:
+        cursor.close()
         conn.close()
 
 def get_pending_news():
     """獲取所有待審核的新聞"""
-    conn = sqlite3.connect('./news_system.db')
-    cursor = conn.cursor()
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
     cursor.execute("SELECT * FROM news WHERE status = 'PENDING'")
     rows = cursor.fetchall()
     conn.close()
@@ -98,9 +118,9 @@ def get_pending_news():
 
 def get_news_by_id(news_id):
     """根據 ID 獲取新聞詳細資訊"""
-    conn = sqlite3.connect('./news_system.db')
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM news WHERE id = ?", (news_id,))
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    cursor.execute("SELECT * FROM news WHERE id = %s", (news_id,))
     row = cursor.fetchone()
     conn.close()
     return row
@@ -108,22 +128,22 @@ def get_news_by_id(news_id):
 # 喺你的 DB 檔案入面修改：
 def update_news_content(news_id, o_title, o_content, t_title, t_content, img_path, area, source_url, breaking, status):
     """更新新聞內容，確保所有 9 個參數都對齊"""
-    conn = sqlite3.connect('./news_system.db')
+    conn = get_db_connection()
     try:
         cursor = conn.cursor()
         query = '''
             UPDATE news 
-            SET original_title = ?, 
-                original_content = ?, 
-                translated_title = ?, 
-                translated_content = ?, 
-                image_path = ?, 
-                area = ?, 
-                source_url = ?, 
-                breaking = ?,
-                last_updated = ?,
-                status = ?
-            WHERE id = ?
+            SET original_title = %s, 
+                original_content = %s, 
+                translated_title = %s, 
+                translated_content = %s, 
+                image_path = %s, 
+                area = %s, 
+                source_url = %s, 
+                breaking = %s,
+                last_updated = %s,
+                status = %s
+            WHERE id = %s
         '''
         # 參數順序必須同 SQL query 入面嘅問號完全一致
         cursor.execute(query, (
@@ -148,11 +168,11 @@ def update_news_content(news_id, o_title, o_content, t_title, t_content, img_pat
 
 def update_status(news_id, status):
     """更新新聞狀態"""
-    conn = sqlite3.connect('./news_system.db')
+    conn = get_db_connection()
     try:
-        cursor = conn.cursor()
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
         cursor.execute(
-            "UPDATE news SET status = ?, last_updated = ? WHERE id = ?",
+            "UPDATE news SET status = %s, last_updated = %s WHERE id = %s",
             (status, datetime.now(), news_id)
         )
         conn.commit()
@@ -161,8 +181,8 @@ def update_status(news_id, status):
 
 def get_all_news():
     """獲取所有新聞"""
-    conn = sqlite3.connect('./news_system.db')
-    cursor = conn.cursor()
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
     cursor.execute("SELECT * FROM news")
     rows = cursor.fetchall()
     conn.close()
@@ -170,8 +190,8 @@ def get_all_news():
 
 def clear_news():
     """清除所有新聞資料"""
-    conn = sqlite3.connect('./news_system.db')
-    cursor = conn.cursor()
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
     cursor.execute("DELETE FROM news")
     conn.commit()
     conn.close()
@@ -179,9 +199,9 @@ def clear_news():
 
 def get_id_by_link(source_url):
     """根據來源連結獲取新聞 ID"""
-    conn = sqlite3.connect('./news_system.db')
-    cursor = conn.cursor()
-    cursor.execute("SELECT id FROM news WHERE source_url = ?", (source_url,))
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    cursor.execute("SELECT id FROM news WHERE source_url = %s", (source_url,))
     row = cursor.fetchone()
     conn.close()
     return row[0] if row else None
