@@ -16,6 +16,13 @@ def get_db_connection():
 
 def init_db():
     """初始化資料庫，建立新聞表"""
+    try:
+        DATABASE_URL = os.getenv("DATABASE_URL")
+        if not DATABASE_URL:
+            raise ValueError("DATABASE_URL 環境變數未設置")
+    except Exception as e:
+        print(f"❌ 環境變數錯誤: {e}")
+        return
     conn = get_db_connection()
     cursor = conn.cursor()
     
@@ -59,7 +66,7 @@ def add_column_to_news(column_name, column_type="TEXT"):
     finally:
         conn.close()
 
-        
+
 def save_news(data: dict):
     """保存新聞並返回新產生的 ID"""
     conn = get_db_connection()
