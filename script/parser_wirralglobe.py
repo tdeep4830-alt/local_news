@@ -94,7 +94,8 @@ def process_news_item_wirralglobe(item: dict, area: str, source: str) -> dict:
     result["shortened_title"] = translated.get("shortened_title", "")
     download_jpg(item.get('media_content', [{}])[0].get('url', ''), item.get('title', ''))
     photo_name = re.sub(r'[\\/*?:"<>|\s]+', "_", str(item.get('title', '')))
-    add_text_to_image_with_background(f"/Users/tobychunyu/Desktop/Deep/local_news/downloads/{photo_name}.jpg", result["shortened_title"], photo_name, breaking=0, source=source)
+    downloads_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "downloads")
+    add_text_to_image_with_background(os.path.join(downloads_dir, f"{photo_name}.jpg"), result["shortened_title"], photo_name, breaking=0, source=source)
     result["image"] = f"{photo_name}_with_title.jpg"
     result["area"] = area
     result["source"] = source

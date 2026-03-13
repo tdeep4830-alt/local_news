@@ -86,8 +86,8 @@ def download_jpg(url: str, title: int):
     從指定 URL 下載 JPG 並以自定義名稱儲存
     """
     # 1. 確保儲存資料夾存在
-    if not os.path.exists("downloads"):
-        os.makedirs("downloads")
+    downloads_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "downloads")
+    os.makedirs(downloads_dir, exist_ok=True)
 
     photo_name = re.sub(r'[\\/*?:"<>|\s]+', "_", str(title))  # 移除不合法字元
 
@@ -95,7 +95,7 @@ def download_jpg(url: str, title: int):
     if not photo_name.lower().endswith(".jpg"):
         photo_name += ".jpg"
 
-    file_path = os.path.join("downloads", photo_name)
+    file_path = os.path.join(downloads_dir, photo_name)
 
     try:
         # 3. 發送請求，加入 Timeout 避免程式卡死
