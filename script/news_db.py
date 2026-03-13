@@ -2,11 +2,22 @@ from datetime import datetime
 from psycopg2.extras import RealDictCursor
 import os
 import psycopg2
+from dotenv import load_dotenv
+
+# Load .env from project root (works both when imported and run directly)
+load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".env"))
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 def get_db_connection():
     """獲取資料庫連接"""
+    try:
+        if not DATABASE_URL:
+            raise ValueError("DATABASE_URL 環境變數未設定")
+    except Exception as e:
+        print(f"❌ 環境變數錯誤: {e}")
+        return
+
     try:
         conn = psycopg2.connect(DATABASE_URL)
         return conn
@@ -16,13 +27,6 @@ def get_db_connection():
 
 def init_db():
     """初始化資料庫，建立新聞表"""
-    try:
-        DATABASE_URL = os.getenv("DATABASE_URL")
-        if not DATABASE_URL:
-            raise ValueError("DATABASE_URL 環境變數未設置")
-    except Exception as e:
-        print(f"❌ 環境變數錯誤: {e}")
-        return
     conn = get_db_connection()
     cursor = conn.cursor()
     
@@ -214,6 +218,5 @@ def get_id_by_link(source_url):
     return row[0] if row else None
 
 if __name__ == "__main__":
-    add_column_to_news("breaking", "INTEGER DEFAULT 0")  # 如果之前版本冇呢個 column，可以執行一次來添加
     init_db()
 
