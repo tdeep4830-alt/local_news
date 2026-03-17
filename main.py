@@ -223,4 +223,15 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         content={"detail": exc.errors()},
     )
 
+@app.get("/api/health")
+def health_check():
+    """
+    專門給 UptimeRobot 用的 Endpoint
+    不需要 Token 驗證，只回傳 200 OK
+    """
+    return {
+        "status": "online",
+        "timestamp": datetime.now().isoformat(),
+        "service": "local-news-backend"
+    }
 
