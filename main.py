@@ -60,7 +60,8 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
  
 
-load_dotenv(dotenv_path=os.path.join(BASE_DIR, ".env")) # 使用 BASE_DIR
+load_dotenv(dotenv_path=os.path.join(BASE_DIR, ".env"))
+load_dotenv(dotenv_path=os.path.join(BASE_DIR, "api", ".env"))
 SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 ALGORITHM      = os.getenv("JWT_ALGORITHM", "HS256")
 EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRE_MINUTES", "480"))
