@@ -1,11 +1,11 @@
 import sys, os
-print("🚀 [1/9] Python 啟動，開始 import...")
+print("🚀 [1/9] Python 啟動，開始 import...", flush=True)
 
-print("🔄 [2/9] 正在 import 爬蟲模組...")
+print("🔄 [2/9] 正在 import 爬蟲模組...", flush=True)
 from script.parser_echo import echo_pipeline
 from script.parser_livpost import thePost_pipeline
 from script.parser_wirralglobe import wirral_pipeline
-print("✅ [2/9] 爬蟲模組 import 成功")
+print("✅ [2/9] 爬蟲模組 import 成功", flush=True)
 
 import time
 import asyncio
@@ -21,20 +21,21 @@ from datetime import datetime, timedelta
 from jose import JWTError, jwt
 import bcrypt
 from dotenv import load_dotenv
-print("✅ [3/9] 標準庫 import 成功")
+print("✅ [3/9] 標準庫 import 成功", flush=True)
 
 from script.news_db import init_db
-print("✅ [4/9] news_db import 成功")
+print("✅ [4/9] news_db import 成功", flush=True)
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from script.append_to_google_doc import create_news_doc
 import script.news_db as db
-print("✅ [5/9] Google Doc / DB import 成功")
+print("✅ [5/9] Google Doc / DB import 成功", flush=True)
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi import Request
+from fastapi.concurrency import run_in_threadpool
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-print("✅ [6/9] FastAPI 相關 import 成功")
+print("✅ [6/9] FastAPI 相關 import 成功", flush=True)
 
 async def run_pipelines():
     print("✅ 後台爬蟲任務已啟動...")
@@ -43,9 +44,9 @@ async def run_pipelines():
             print(f"[{datetime.now()}] 正在執行爬蟲程式...")
             # 這裡建議將同步的 pipeline 改為 non-blocking 或在 thread 中執行
             # 如果 pipeline 很吃資源，這是觀察 CPU 監控點
-            echo_pipeline()
-            thePost_pipeline()
-            wirral_pipeline()
+            await run_in_threadpool(echo_pipeline)
+            await run_in_threadpool(thePost_pipeline)
+            await run_in_threadpool(wirral_pipeline)
             print(f"[{datetime.now()}] 爬蟲完成，等待 300 秒...")
         except Exception as e:
             print(f"❌ 爬蟲出錯 (Observability Log): {e}")
@@ -69,7 +70,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
  
 
-print("🔄 [7/9] 正在載入環境變數...")
+print("🔄 [7/9] 正在載入環境變數...", flush=True)
 load_dotenv(dotenv_path=os.path.join(BASE_DIR, ".env"))
 load_dotenv(dotenv_path=os.path.join(BASE_DIR, "api", ".env"))
 SECRET_KEY = os.getenv("JWT_SECRET_KEY")
@@ -77,23 +78,23 @@ ALGORITHM      = os.getenv("JWT_ALGORITHM", "HS256")
 EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRE_MINUTES", "480"))
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
-print(f"✅ [7/9] 環境變數載入完成 — ADMIN_USERNAME={'已設定' if ADMIN_USERNAME else '❌ 未設定'}, ADMIN_PASSWORD={'已設定' if ADMIN_PASSWORD else '❌ 未設定'}, JWT_SECRET_KEY={'已設定' if SECRET_KEY else '❌ 未設定'}")
+print(f"✅ [7/9] 環境變數載入完成 — ADMIN_USERNAME={'已設定' if ADMIN_USERNAME else '❌ 未設定'}, ADMIN_PASSWORD={'已設定' if ADMIN_PASSWORD else '❌ 未設定'}, JWT_SECRET_KEY={'已設定' if SECRET_KEY else '❌ 未設定'}", flush=True)
 
 oauth2_scheme   = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 if not ADMIN_PASSWORD or not SECRET_KEY:
     raise RuntimeError("❌ 缺少必要環境變數：ADMIN_PASSWORD 或 JWT_SECRET_KEY 未設定。請在 Render 的 Environment 頁面新增。")
 
-print("🔄 [8/9] 正在生成 bcrypt hash...")
+print("🔄 [8/9] 正在生成 bcrypt hash...", flush=True)
 HASHED_PASSWORD = bcrypt.hashpw(ADMIN_PASSWORD.encode(), bcrypt.gensalt())
-print("✅ [8/9] bcrypt hash 生成成功")
+print("✅ [8/9] bcrypt hash 生成成功", flush=True)
 
 download_path = os.path.join(BASE_DIR, "downloads")
 if not os.path.exists(download_path):
     os.makedirs(download_path)
 
 app.mount("/images", StaticFiles(directory=download_path), name="downloads")
-print("✅ [9/9] App 設定完成，uvicorn 準備啟動...")
+print("✅ [9/9] App 設定完成，uvicorn 準備啟動...", flush=True)
 # 解決跨域問題 (CORS)，否則 Frontend fetch 會被 block
 app.add_middleware(
     CORSMiddleware,
