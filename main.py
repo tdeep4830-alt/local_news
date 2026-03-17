@@ -1,7 +1,13 @@
+import sys, os
+print("🚀 [1/9] Python 啟動，開始 import...")
+
+print("🔄 [2/9] 正在 import 爬蟲模組...")
 from script.parser_echo import echo_pipeline
 from script.parser_livpost import thePost_pipeline
 from script.parser_wirralglobe import wirral_pipeline
-import time 
+print("✅ [2/9] 爬蟲模組 import 成功")
+
+import time
 import asyncio
 from contextlib import asynccontextmanager
 import uvicorn
@@ -10,22 +16,25 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
 from typing import List, Optional
-import sys, os
 from fastapi.staticfiles import StaticFiles
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
 import bcrypt
 from dotenv import load_dotenv
-from script.news_db import init_db
+print("✅ [3/9] 標準庫 import 成功")
 
+from script.news_db import init_db
+print("✅ [4/9] news_db import 成功")
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from script.append_to_google_doc import create_news_doc
 import script.news_db as db
+print("✅ [5/9] Google Doc / DB import 成功")
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi import Request
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+print("✅ [6/9] FastAPI 相關 import 成功")
 
 async def run_pipelines():
     print("✅ 後台爬蟲任務已啟動...")
@@ -60,6 +69,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
  
 
+print("🔄 [7/9] 正在載入環境變數...")
 load_dotenv(dotenv_path=os.path.join(BASE_DIR, ".env"))
 load_dotenv(dotenv_path=os.path.join(BASE_DIR, "api", ".env"))
 SECRET_KEY = os.getenv("JWT_SECRET_KEY")
@@ -67,19 +77,23 @@ ALGORITHM      = os.getenv("JWT_ALGORITHM", "HS256")
 EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRE_MINUTES", "480"))
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
+print(f"✅ [7/9] 環境變數載入完成 — ADMIN_USERNAME={'已設定' if ADMIN_USERNAME else '❌ 未設定'}, ADMIN_PASSWORD={'已設定' if ADMIN_PASSWORD else '❌ 未設定'}, JWT_SECRET_KEY={'已設定' if SECRET_KEY else '❌ 未設定'}")
 
 oauth2_scheme   = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 if not ADMIN_PASSWORD or not SECRET_KEY:
     raise RuntimeError("❌ 缺少必要環境變數：ADMIN_PASSWORD 或 JWT_SECRET_KEY 未設定。請在 Render 的 Environment 頁面新增。")
 
+print("🔄 [8/9] 正在生成 bcrypt hash...")
 HASHED_PASSWORD = bcrypt.hashpw(ADMIN_PASSWORD.encode(), bcrypt.gensalt())
+print("✅ [8/9] bcrypt hash 生成成功")
 
 download_path = os.path.join(BASE_DIR, "downloads")
 if not os.path.exists(download_path):
-    os.makedirs(download_path) # 自動建立資料夾防止報錯
+    os.makedirs(download_path)
 
 app.mount("/images", StaticFiles(directory=download_path), name="downloads")
+print("✅ [9/9] App 設定完成，uvicorn 準備啟動...")
 # 解決跨域問題 (CORS)，否則 Frontend fetch 會被 block
 app.add_middleware(
     CORSMiddleware,
