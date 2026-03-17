@@ -69,6 +69,10 @@ ADMIN_USERNAME = os.getenv("ADMIN_USERNAME")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
 
 oauth2_scheme   = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
+
+if not ADMIN_PASSWORD or not SECRET_KEY:
+    raise RuntimeError("❌ 缺少必要環境變數：ADMIN_PASSWORD 或 JWT_SECRET_KEY 未設定。請在 Render 的 Environment 頁面新增。")
+
 HASHED_PASSWORD = bcrypt.hashpw(ADMIN_PASSWORD.encode(), bcrypt.gensalt())
 
 download_path = os.path.join(BASE_DIR, "downloads")
