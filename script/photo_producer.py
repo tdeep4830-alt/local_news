@@ -184,7 +184,7 @@ def add_text_to_image_with_background(input_path, text, title, breaking=0, sourc
         draw_overlay.rectangle([(0, lower_third_y), (BG_W, lower_third_y + 10)], fill=line_color)
 
         # --- 新增功能：Breaking 標籤 ---
-        font_path = "/Users/tobychunyu/Desktop/Deep/local_news/public/GenSenRounded2TC-M.otf"
+        font_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "public", "GenSenRounded2TC-M.otf")
         if breaking == 1:
             # 畫一個紅色方塊在黃線上方
             tag_w, tag_h = 280, 70
@@ -238,7 +238,8 @@ def add_text_to_image_with_background(input_path, text, title, breaking=0, sourc
 
         # 7. 儲存
         final_img = final_img.convert("RGB")
-        output_path = f"/Users/tobychunyu/Desktop/Deep/local_news/downloads/{title}_with_title.jpg"
+        downloads_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "downloads")
+        output_path = os.path.join(downloads_dir, f"{title}_with_title.jpg")
         final_img.save(output_path, quality=95) 
         logging.info(f"✅ 圖片已成功儲存至: {output_path} (Breaking: {breaking})")
 
@@ -249,7 +250,7 @@ def add_text_to_image_with_background(input_path, text, title, breaking=0, sourc
 # --- 測試執行 ---
 if __name__ == "__main__":
     add_text_to_image_with_background(
-        input_path="/Users/tobychunyu/Desktop/Deep/local_news/downloads/BBC_Antiques_Roadshow_values_'outrageous'_fashions_at_a_small_fortune.jpg",
+        input_path=os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "downloads", "BBC_Antiques_Roadshow_values_'outrageous'_fashions_at_a_small_fortune.jpg"),
         text="Liverpool Echo 最新新聞，這是一段測試標題，用來驗證圖片生成腳本嘅功能同效果。",
         title="header",
         source="Liverpool Echo",
