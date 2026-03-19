@@ -158,7 +158,7 @@ useEffect(() => {
             <Label>圖片</Label>
             {formData.img_path ? (
               <img
-                src={`http://localhost:8001/images/${formData.img_path}`}
+                src={`https://local-news-9c16.onrender.com/images/${formData.img_path}`}
                 alt="新聞圖片"
                 className="w-full max-h-80 object-contain rounded border"
               />
