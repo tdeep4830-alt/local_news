@@ -13,10 +13,8 @@ import schedule
 import json
 import re
 
+STACK_CAPACITY = 100 
 
-STACK_CAPACITY = 100 # 防止記憶體無限增長
-
-# 模擬 Stack 存放已處理的文章唯一標識符 (Entry ID or Link)
 seen_entries_stack: List[str] = []
 
 def timer_decorator(func):
@@ -39,20 +37,15 @@ def fetch_and_check_echo_rss():
         new_items = []
         new_items_found_count = 0
 
-        # RSS 項目通常按時間倒序排列，我們由舊到新處理或直接遍歷
         for entry in reversed(feed.entries):
-            entry_id = entry.get(entry.link, "")
+            # 修正 1：正確獲取唯一 ID
+            entry_id = entry.get('id', entry.link)
 
-            # 檢查是否已在 Stack 中 (重複檢查)
             if entry_id not in seen_entries_stack:
-                # 執行你的邏輯，例如推送到通知、存入資料庫等
                 new_items.append(entry)
-
-                # Push 到 Stack
                 seen_entries_stack.append(entry_id)
                 new_items_found_count += 1
 
-                # 維持 Stack 長度，移除最舊的數據 (類似 Fixed-size Stack)
                 if len(seen_entries_stack) > STACK_CAPACITY:
                     seen_entries_stack.pop(0)
 
@@ -64,38 +57,24 @@ def fetch_and_check_echo_rss():
         return new_items
 
     except Exception as e:
-        print(f"發生錯誤: {e}")
+        print(f"檢查 RSS 發生錯誤: {e}")
+        return [] # 確保出錯時回傳空 list
 
 @timer_decorator
 def fetch_news_content(url: str) -> str:
-    """
-    根據 URL 下載網頁並提取指定 class 的內文
-    """
     try:
-        # 1. 發送請求，加入 User-Agent 模擬瀏覽器，避免被網站封鎖
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         }
         response = requests.get(url, headers=headers, timeout=10)
-        
-        # 檢查請求是否成功
         response.raise_for_status()
         
-        # 2. 解析 HTML
         soup = BeautifulSoup(response.text, 'html.parser')
-        
-        # 3. 尋找所有指定 class 的元素
-        # 你提到的 class 是 "Paragraph_paragraph-text__PVKlh"
         paragraphs = soup.find_all(class_="Paragraph_paragraph-text__PVKlh")
-        
-        # 4. 提取文字並合併
         content = "\n".join([p.get_text(strip=True) for p in paragraphs])
         
         return content
 
-    except requests.exceptions.RequestException as e:
-        print(f"下載網頁失敗 ({url}): {e}")
-        return ""
     except Exception as e:
         print(f"解析內容時發生錯誤: {e}")
         return ""
@@ -103,24 +82,29 @@ def fetch_news_content(url: str) -> str:
 def process_news_item(item: dict, area: str, source: str) -> dict:
     result = {}
     result["o_title"] = item.get('title', '')
-    result["source_url"] = item.get('link', '') # 記住存低 URL
+    result["source_url"] = item.get('link', '') 
     
-    # 獲取內文
     result["o_content"] = fetch_news_content(result["source_url"])
     
-    # 翻譯
     translated = translate_news_with_deepseek(result["o_title"], result["o_content"])
     result["t_title"] = translated.get("translated_title", "")
     result["t_content"] = translated.get("translated_content", "")
     result["shortened_title"] = translated.get("shortened_title", "")
     
-    # 圖片抓取修正：建議用之前討論過嘅 get_image_url 邏輯
-    # 如果堅持用 links，先 check 長度
-    download_jpg(item.links[1]['href'], item.get('title', ''))
-    photo_name = re.sub(r'[\\/*?:"<>|\s]+', "_", str(item.get('title', '')))
-    downloads_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "downloads")
-    add_text_to_image_with_background(os.path.join(downloads_dir, f"{photo_name}.jpg"), result["shortened_title"], photo_name, breaking=0, source=source)
-    result["image"] = f"{photo_name}_with_title.jpg"
+    # 修正 2：先建立安全的 photo_name，然後統一使用
+    photo_name = re.sub(r'[\\/*?:"<>|\s]+', "_", str(result["o_title"]))
+    
+    # 確保 links 存在且有足夠長度避免 IndexError
+    image_url = item.links[1]['href'] if hasattr(item, 'links') and len(item.links) > 1 else ""
+    
+    if image_url:
+        download_jpg(image_url, photo_name) # 用乾淨的檔名下載
+        downloads_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "downloads")
+        add_text_to_image_with_background(os.path.join(downloads_dir, f"{photo_name}.jpg"), result["shortened_title"], photo_name, breaking=0, source=source)
+        result["image"] = f"{photo_name}_with_title.jpg"
+    else:
+        result["image"] = ""
+        
     result["area"] = area
     result["source"] = source
 
@@ -128,17 +112,23 @@ def process_news_item(item: dict, area: str, source: str) -> dict:
 
 def echo_pipeline():
     news_items = fetch_and_check_echo_rss()
-    for item in news_items:  # 只處理最新的 3 條新聞，避免一次處理太多
-        processed = process_news_item(item, area="liverpool", source="liverpoolecho")
+    for item in news_items: 
         try:
+            processed = process_news_item(item, area="liverpool", source="liverpoolecho")
             save_news(processed)
-            print(f"已保存新聞: {processed['t_title']}")
+            print(f"✅ 已保存新聞: {processed['t_title']}")
         except Exception as e:
-            print(f"保存新聞時發生錯誤: {e}")
+            print(f"❌ 處理或保存新聞時發生錯誤: {e}")
 
 if __name__ == "__main__":
+    print("服務準備啟動...")
+    # 第一次啟動先跑一次，避免要白等 5 分鐘
+    echo_pipeline() 
+    
+    # 修正 3：正確定義排程
+    schedule.every(5).minutes.do(echo_pipeline)
+    print("排程已設定，每五分鐘將自動執行一次...")
+    
     while True:
-        echo_pipeline()
-        print("服務已啟動，每五分鐘將自動執行一次...")
         schedule.run_pending()
-        time.sleep(300)
+        time.sleep(1) # 只 sleep 1 秒避免 CPU 空轉，時間管理交畀 schedule
