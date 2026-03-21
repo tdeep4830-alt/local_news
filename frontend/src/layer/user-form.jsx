@@ -90,6 +90,21 @@ useEffect(() => {
     }
   }
 
+  const handlePostToFacebook = async () => {
+    setIsSubmitting(true)
+    try {
+      const res = await apiFetch(`/api/news/${newsId}/post`, {
+        method: "POST",
+      })
+      if (!res) return
+      if (res.ok) alert("✅ 已成功發布到 Facebook！")
+    } catch (error) {
+      console.error("Error posting to Facebook:", error)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   const status = [
     { value: "PENDING", label: "待處理" },
     { value: "APPROVED", label: "已批准" },
@@ -194,7 +209,7 @@ useEffect(() => {
             </Button>
             <Button 
               type="button" 
-              onClick={handleAppendToGoogle} 
+              onClick={handlePostToFacebook} 
               variant="secondary" 
               className="bg-green-600 hover:bg-green-700 text-white w-full" 
               disabled={isSubmitting || isSaving}

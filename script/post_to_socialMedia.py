@@ -2,6 +2,8 @@ import os
 import requests
 import logging
 from dotenv import load_dotenv
+import sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), ".")))
 from news_db import get_news_by_id, update_status
 from fastapi import FastAPI, HTTPException 
 from fastapi.middleware.cors import CORSMiddleware

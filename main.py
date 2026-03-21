@@ -9,6 +9,7 @@ print("✅ [2/9] 爬蟲模組 import 成功", flush=True)
 
 import time
 import asyncio
+import logging
 from contextlib import asynccontextmanager
 import uvicorn
 from fastapi import FastAPI, HTTPException, Depends
@@ -36,6 +37,10 @@ from fastapi import Request
 from fastapi.concurrency import run_in_threadpool
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 print("✅ [6/9] FastAPI 相關 import 成功", flush=True)
+from script.post_to_socialMedia import post_to_facebook
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 async def run_pipelines():
     print("✅ 後台爬蟲任務已啟動...")
@@ -203,21 +208,7 @@ def update_news(news_id: int, news: NewsCreate, current_user: str = Depends(get_
     )
     return {"message": "更新成功"}
 
-@app.post("/api/news/{news_id}/post")
-def post_to_social_media(news_id: int, current_user: str = Depends(get_current_user)):
-    row = db.get_news_by_id(news_id)
-    if not row:
-        raise HTTPException(status_code=404, detail="搵唔到呢條新聞")
 
-    title = row[3]
-    content = row[4]
-
-    try:
-        print(f"正在發布到社交媒體: {title}")
-        db.update_status(news_id, 'POSTED')
-        return {"status": "success", "message": "已成功發布到社交媒體"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"發布失敗: {str(e)}")
 
 @app.post("/api/news/{news_id}/google")
 def post_to_google(news_id: int, current_user: str = Depends(get_current_user)):
@@ -234,6 +225,30 @@ def post_to_google(news_id: int, current_user: str = Depends(get_current_user)):
         return {f"status": "success", "message": "已成功發布到 Google", "link": google_link}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"發布到Google失敗: {str(e)}")
+
+@app.post("/api/news/{news_id}/post")
+def handle_social_post(news_id: int):
+    row = db.get_news_by_id(news_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="搵唔到新聞")
+
+    # 組合貼文內容 (用翻譯後嘅標題同內容)
+    post_content = f"{row[3]}\n\n{row[5]}" # Translated Title + Content
+    source_url = row[9] # Source URL
+    
+    if post_content:
+        print(f"正在發布到 Facebook: {post_content[:50]}...") # 觀察性日誌，顯示前 50 字
+    else:
+        print("❌ 發布內容為空")
+
+    # 執行發文
+    success, result = post_to_facebook(post_content, link=source_url)
+    
+    if success:
+        db.update_status(news_id, 'POSTED')
+        return {"status": "success", "fb_post_id": result}
+    else:
+        raise HTTPException(status_code=500, detail=f"發布失敗: {result}")
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
