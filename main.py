@@ -53,7 +53,14 @@ async def run_pipelines():
             # 這裡建議將同步的 pipeline 改為 non-blocking 或在 thread 中執行
             # 如果 pipeline 很吃資源，這是觀察 CPU 監控點
             for rss in RSS_URLS:
-                await run_in_threadpool(pipeline(rss["RSS"], rss["AREA"], rss["SOURCE"], rss["CLASS_NAME"]))
+    # 注意：pipeline 後面「沒有」括號
+                await run_in_threadpool(
+                    pipeline,           # 1. 函數名
+                    rss["RSS"],         # 2. 第一個參數
+                    rss["AREA"],        # 3. 第二個參數
+                    rss["SOURCE"],      # 4. 第三個參數
+                    rss["CLASS_NAME"]   # 5. 第四個參數
+                )
             print(f"[{datetime.now()}] 爬蟲完成，等待 300 秒...")
         except Exception as e:
             print(f"❌ 爬蟲出錯 (Observability Log): {e}")
