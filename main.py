@@ -2,9 +2,7 @@ import sys, os
 print("🚀 [1/9] Python 啟動，開始 import...", flush=True)
 
 print("🔄 [2/9] 正在 import 爬蟲模組...", flush=True)
-from script.parser_echo import echo_pipeline
-from script.parser_livpost import thePost_pipeline
-from script.parser_wirralglobe import wirral_pipeline
+from script.parser import pipeline
 print("✅ [2/9] 爬蟲模組 import 成功", flush=True)
 
 import time
@@ -44,14 +42,18 @@ logger = logging.getLogger(__name__)
 
 async def run_pipelines():
     print("✅ 後台爬蟲任務已啟動...")
+    RSS_URLS = [
+        {"RSS": "https://www.manchestereveningnews.co.uk/news/?service=rss", "AREA": "Manchester", "SOURCE": "Manchester Evening News", "CLASS_NAME": "Paragraph_paragraph-text__PVKlh "},
+        {"RSS": "https://www.liverpoolecho.co.uk/?service=rss", "AREA": "Liverpool", "SOURCE": "Liverpool Echo", "CLASS_NAME": "Paragraph_paragraph-text__PVKlh"},
+        {"RSS": "https://www.wirralglobe.co.uk/?service=rss", "AREA": "Wirral", "SOURCE": "Wirral Globe", "CLASS_NAME": "article-content"}
+    ]
     while True:
         try:
             print(f"[{datetime.now()}] 正在執行爬蟲程式...")
             # 這裡建議將同步的 pipeline 改為 non-blocking 或在 thread 中執行
             # 如果 pipeline 很吃資源，這是觀察 CPU 監控點
-            await run_in_threadpool(echo_pipeline)
-            await run_in_threadpool(thePost_pipeline)
-            await run_in_threadpool(wirral_pipeline)
+            for rss in RSS_URLS:
+                await run_in_threadpool(pipeline(rss["RSS"], rss["AREA"], rss["SOURCE"], rss["CLASS_NAME"]))
             print(f"[{datetime.now()}] 爬蟲完成，等待 300 秒...")
         except Exception as e:
             print(f"❌ 爬蟲出錯 (Observability Log): {e}")
@@ -227,7 +229,7 @@ def post_to_google(news_id: int, current_user: str = Depends(get_current_user)):
         raise HTTPException(status_code=500, detail=f"發布到Google失敗: {str(e)}")
 
 @app.post("/api/news/{news_id}/post")
-def handle_social_post(news_id: int):
+def handle_social_post(news_id: int, current_user: str = Depends(get_current_user)):
     row = db.get_news_by_id(news_id)
     if not row:
         raise HTTPException(status_code=404, detail="搵唔到新聞")
@@ -236,10 +238,6 @@ def handle_social_post(news_id: int):
     post_content = f"{row[3]}\n\n{row[5]}" # Translated Title + Content
     source_url = row[9] # Source URL
     
-    if post_content:
-        print(f"正在發布到 Facebook: {post_content[:50]}...") # 觀察性日誌，顯示前 50 字
-    else:
-        print("❌ 發布內容為空")
 
     # 執行發文
     success, result = post_to_facebook(post_content, link=source_url)
