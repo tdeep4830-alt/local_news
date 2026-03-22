@@ -7,9 +7,9 @@ from typing import List
 import os
 import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from .news_db import save_news
-from .translate import translate_news_with_deepseek
-from .photo_producer import download_jpg, add_text_to_image_with_background
+from news_db import save_news
+from translate import translate_news_with_deepseek
+from photo_producer import download_jpg, add_text_to_image_with_background
 import schedule
 import json
 import re
@@ -69,8 +69,9 @@ def fetch_news_content(url: str, class_name: str) -> str:
         response = requests.get(url, headers=headers, timeout=10)
         response.raise_for_status()
         
+        target_classes = class_name.split()
         soup = BeautifulSoup(response.text, 'html.parser')
-        paragraphs = soup.find_all(class_=class_name)
+        paragraphs = soup.find_all(class_=target_classes)
         content = "\n".join([p.get_text(strip=True) for p in paragraphs])
         
         return content
