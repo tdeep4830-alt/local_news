@@ -7,9 +7,9 @@ from typing import List
 import os
 import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from news_db import save_news
-from translate import translate_news_with_deepseek
-from photo_producer import download_jpg, add_text_to_image_with_background
+from .news_db import save_news
+from .translate import translate_news_with_deepseek
+from .photo_producer import download_jpg, add_text_to_image_with_background
 import schedule
 import json
 import re
