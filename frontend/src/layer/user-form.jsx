@@ -225,7 +225,7 @@ useEffect(() => {
             <Label>圖片</Label>
             {formData.img_path ? (
               <img
-                src={`https://iwmzydqwcnwmaauegooz.supabase.co/storage/v1/object/public/images/${formData.img_path}`}
+                src={`${formData.img_path}`}
                 alt="新聞圖片"
                 className="w-full max-h-80 object-contain rounded border"
               />

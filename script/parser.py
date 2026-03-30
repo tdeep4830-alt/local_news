@@ -94,7 +94,7 @@ def process_news_item(item: dict, area: str, source: str, class_name: str) -> di
     result["shortened_title"] = translated.get("shortened_title", "")
     
     # 修正 2：先建立安全的 photo_name，然後統一使用
-    photo_name = re.sub(r"[\\/*?:\"<>|'\s]+", "_", str(result["o_title"]))
+    photo_name = re.sub(r"[^\w\-]+", "_", str(result["o_title"]))
     
     # 確保 links 存在且有足夠長度避免 IndexError
     image_url = item.links[1]['href'] if hasattr(item, 'links') and len(item.links) > 1 else ""
