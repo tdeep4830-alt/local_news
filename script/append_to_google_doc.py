@@ -3,6 +3,10 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 import os
+import sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from core.config import settings
+
 
 # 設定 API 權限範圍：需要讀寫 Drive 和 Docs
 SCOPES = [
@@ -13,6 +17,23 @@ SCOPES = [
 _DIR = os.path.dirname(os.path.abspath(__file__))
 _TOKEN_PATH = os.path.join(_DIR, 'token.json')
 _CREDS_PATH = os.path.join(_DIR, 'credentials.json')
+
+def get_drive_service():
+    # 從 Render 環境變數讀取
+    creds = Credentials(
+        token=None, # 初始設為 None，靠 refresh_token 換取
+        refresh_token=settings.GOOGLE_REFRESH_TOKEN,
+        token_uri="https://oauth2.googleapis.com/token",
+        client_id=settings.GOOGLE_CLIENT_ID,
+        client_secret=settings.GOOGLE_CLIENT_SECRET,
+        scopes=['https://www.googleapis.com/auth/drive.file']
+    )
+
+    # 如果 token 過期，自動重新整理
+    if not creds.valid:
+        creds.refresh(Request())
+    
+    return build('drive', 'v3', credentials=creds)
 
 def get_google_services():
     """驗證並獲取 Drive 和 Docs 服務"""
@@ -31,11 +52,41 @@ def get_google_services():
 
     return build('docs', 'v1', credentials=creds), build('drive', 'v3', credentials=creds)
 
+def get_authenticated_service():
+    """統一獲取服務的入口，優先使用環境變數"""
+    
+    # 嘗試從環境變數讀取 (Render 環境)
+    if settings.GOOGLE_REFRESH_TOKEN:
+        creds = Credentials(
+            token=None,
+            refresh_token=settings.GOOGLE_REFRESH_TOKEN,
+            token_uri="https://oauth2.googleapis.com/token",
+            client_id=settings.GOOGLE_CLIENT_ID,
+            client_secret=settings.GOOGLE_CLIENT_SECRET,
+            scopes=SCOPES
+        )
+    # 否則從本地 token.json 讀取 (開發環境)
+    elif os.path.exists(_TOKEN_PATH):
+        creds = Credentials.from_authorized_user_file(_TOKEN_PATH, SCOPES)
+    else:
+        # 如果都沒有，跑一次授權流程
+        flow = InstalledAppFlow.from_client_secrets_file(_CREDS_PATH, SCOPES)
+        creds = flow.run_local_server(port=0)
+        with open(_TOKEN_PATH, 'w') as token:
+            token.write(creds.to_json())
+
+    # 確保 Token 有效
+    if not creds.valid:
+        if creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+            
+    return build('docs', 'v1', credentials=creds), build('drive', 'v3', credentials=creds)
+
 def create_news_doc(title: str, content: str, image_url: str):
     """
     建立一個新的 Google Doc 並插入標題、圖片與內容
     """
-    docs_service, drive_service = get_google_services()
+    docs_service, drive_service = get_authenticated_service()
 
     try:
         # 1. 透過 Drive API 建立一個空白的 Google Doc
