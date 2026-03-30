@@ -31,6 +31,7 @@ def post_to_facebook(message: str, link: str = None, photo_url: str = None):
     """
     page_id = os.getenv("FB_PAGE_ID")
     access_token = os.getenv("FB_PAGE_ACCESS_TOKEN")
+    print(access_token)
     
     url = f"https://graph.facebook.com/v25.0/{page_id}/feed"
     
@@ -150,5 +151,5 @@ def post_to_thread(message: str, link: str = None):
 
 if __name__ == "__main__":
     message = "測試貼文內容"
-    photo_url = "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/Camponotus_flavomarginatus_ant.jpg/640px-Camponotus_flavomarginatus_ant.jpg"
-    post_to_instagram(message, photo_url)
+    photo_url = "https://www.manchestereveningnews.co.uk/news/greater-manchester-news/manchester-united-fans-warned-new-33686663"
+    post_to_facebook(message, photo_url)

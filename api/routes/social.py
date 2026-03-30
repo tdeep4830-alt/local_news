@@ -46,10 +46,9 @@ def handle_instagram_post(news_id: int, current_user: str = Depends(get_current_
     title = row[3] or 'No Title'
     content = row[5] or ''
     message = f"{title}\n\n{content}"
-    image_path = row[6]
-    if not image_path:
+    image_url = row[6]
+    if not image_url:
         raise HTTPException(status_code=400, detail="呢條新聞冇圖片，無法發布到 Instagram")
-    image_url = f"https://local-news-9c16.onrender.com/images/{image_path}"
 
     print(f"📸 [Social] 正在為用戶 {current_user} 發布 IG Post: {title[:20]}...")
     success, result = post_to_instagram(message, image_url)
