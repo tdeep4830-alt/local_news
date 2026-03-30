@@ -10,6 +10,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 from .news_db import save_news
 from .translate import translate_news_with_deepseek
 from .photo_producer import download_jpg, add_text_to_image_with_background
+from services.storage_service import upload_image_to_supabase
 import schedule
 import json
 import re
@@ -93,17 +94,14 @@ def process_news_item(item: dict, area: str, source: str, class_name: str) -> di
     result["shortened_title"] = translated.get("shortened_title", "")
     
     # 修正 2：先建立安全的 photo_name，然後統一使用
-    photo_name = re.sub(r'[\\/*?:"<>|\s]+', "_", str(result["o_title"]))
+    photo_name = re.sub(r"[\\/*?:\"<>|'\s]+", "_", str(result["o_title"]))
     
     # 確保 links 存在且有足夠長度避免 IndexError
     image_url = item.links[1]['href'] if hasattr(item, 'links') and len(item.links) > 1 else ""
     
     if image_url:
-        download_jpg(image_url, photo_name) # 用乾淨的檔名下載
-        # 暫時唔用add_text_to_image_with_background的Function
-        # downloads_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "downloads")
-        # add_text_to_image_with_background(os.path.join(downloads_dir, f"{photo_name}.jpg"), result["shortened_title"], photo_name, breaking=0, source=source)
-        result["image"] = f"{photo_name}.jpg"
+        supabase_url = upload_image_to_supabase(image_url, photo_name)
+        result["image"] = supabase_url or ""
     else:
         result["image"] = ""
         

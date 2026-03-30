@@ -21,6 +21,8 @@ class Settings:
     ADMIN_USERNAME: str = os.getenv("ADMIN_USERNAME", "admin")
     ADMIN_PASSWORD: str = os.getenv("ADMIN_PASSWORD") 
     SECRET_KEY: str = os.getenv("JWT_SECRET_KEY")
+    SUPABASE_URL: str = os.getenv("SUPABASE_URL")
+    SUPABASE_KEY: str = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
     
     ALGORITHM: str = os.getenv("JWT_ALGORITHM", "HS256")
     EXPIRE_MINUTES: int = int(os.getenv("JWT_EXPIRE_MINUTES", "480"))
