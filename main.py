@@ -26,21 +26,26 @@ async def lifespan(app: FastAPI):
     crawler_task = asyncio.create_task(run_pipelines())
     yield
     crawler_task.cancel()
+app = FastAPI(title="Local News System", lifespan=lifespan)
 
-app = FastAPI(title=settings.PROJECT_NAME, lifespan=lifespan)
+# --- 呢度係關鍵：CORS 通行證 ---
+origins = [
+    "http://localhost:5173",    # 你嘅 React 開發環境
+    "http://127.0.0.1:5173",
+    "https://local-news-frontend-48mr.onrender.com", # 你嘅 Render 網址
+]
 
-
-# CORS 設定
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # 部署時再縮小範圍
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=origins,      # 准許呢啲來源
+    allow_credentials=True,     # 准許傳送 Token (Authorization Header)
+    allow_methods=["*"],        # 准許所有動作 (POST, GET 等)
+    allow_headers=["*"],        # 准許所有 Headers
 )
 
+# 註冊路由
+app.include_router(auth.router)
 app.include_router(news.router)
-app.include_router(auth.router) # 這裡會自動加上 prefix "/api/auth" 和 tags "Authentication"
 app.include_router(social.router)
 
 # 健康檢查 (給 UptimeRobot)

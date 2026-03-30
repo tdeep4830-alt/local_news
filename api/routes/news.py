@@ -62,7 +62,7 @@ def get_one_news(news_id: int, current_user: str = Depends(get_current_user)):
     if not row:
         raise HTTPException(status_code=404, detail="搵唔到呢條新聞")
     # 這裡也要對應你的 DB 結構
-    return {"id": row[0], "o_title": row[1], "t_title": row[3], "source_url": row[9]}
+    return {"id": row[0], "o_title": row[1], "t_title": row[3], "t_content": row[5], "img_path": row[6], "area": row[7], "o_url": row[9], "status": row[10]}
 
 
 @router.put("/{news_id}")

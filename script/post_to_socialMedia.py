@@ -7,6 +7,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "."))
 from news_db import get_news_by_id, update_status
 from fastapi import FastAPI, HTTPException 
 from fastapi.middleware.cors import CORSMiddleware
+import time
 
 app = FastAPI()
 
@@ -30,6 +31,7 @@ def post_to_facebook(message: str, link: str = None, photo_url: str = None):
     """
     page_id = os.getenv("FB_PAGE_ID")
     access_token = os.getenv("FB_PAGE_ACCESS_TOKEN")
+    
     url = f"https://graph.facebook.com/v25.0/{page_id}/feed"
     
     
@@ -58,35 +60,63 @@ def post_to_facebook(message: str, link: str = None, photo_url: str = None):
         logger.error(f"❌ 網絡連線失敗: {str(e)}")
         return False, str(e)
 
-def post_to_instagram(message: str, image_url: str = None):
+def post_to_instagram(message: str, image_url: str):
     """
-    呼叫 Instagram Graph API 發布貼文
+    呼叫 Instagram Graph API 分兩步發布貼文
     """
     user_id = os.getenv("IG_USER_ID")
     access_token = os.getenv("IG_ACCESS_TOKEN")
-    url = f"https://graph.instagram.com/v12.0/{user_id}/media"
-
+    if not access_token:
+        logger.error("❌ 環境變數錯誤: IG_ACCESS_TOKEN 未設定")
+        return False, "IG_ACCESS_TOKEN 未設定"
+    
+    # --- 第一步：建立媒體容器 (Create Container) ---
+    # 注意：通常使用 graph.facebook.com，版本建議用最新 v21.0
+    container_url = f"https://graph.instagram.com/v21.0/{user_id}/media"
+    
     payload = {
+        "image_url": image_url,
         "caption": message,
         "access_token": access_token
     }
-    if image_url:
-        payload["image_url"] = image_url
 
     try:
-        response = requests.post(url, data=payload)
-        response_data = response.json()
+        # 1. 請求建立容器
+        response = requests.post(container_url, data=payload)
+        res_data = response.json()
 
-        if response.status_code == 200:
-            logger.info(f"✅ Instagram 發文成功: {response_data.get('id')}")
-            return True, response_data.get('id')
+        if response.status_code != 200:
+            logger.error(f"❌ 建立容器失敗: {res_data}")
+            return False, res_data
+        
+        creation_id = res_data.get('id')
+        logger.info(f"📦 容器建立成功，ID: {creation_id}")
+
+        # --- 第二步：正式發布媒體 (Publish Media) ---
+        # IG 建議等幾秒確保圖片處理完成
+        time.sleep(5) 
+        
+        publish_url = f"https://graph.instagram.com/v21.0/{user_id}/media_publish"
+        publish_payload = {
+            "creation_id": creation_id,
+            "access_token": access_token
+        }
+
+        publish_response = requests.post(publish_url, data=publish_payload)
+        publish_data = publish_response.json()
+
+        if publish_response.status_code == 200:
+            final_post_id = publish_data.get('id')
+            logger.info(f"✅ Instagram 正式發文成功! 貼文 ID: {final_post_id}")
+            return True, final_post_id
         else:
-            logger.error(f"❌ Instagram API 報錯: {response_data}")
-            return False, response_data.get('error', {}).get('message')
+            logger.error(f"❌ 正式發布失敗: {publish_data}")
+            return False, publish_data
 
     except Exception as e:
-        logger.error(f"❌ 網絡連線失敗: {str(e)}")
+        logger.error(f"❌ 網絡或執行失敗: {str(e)}")
         return False, str(e)
+    
 
 def post_to_thread(message: str, link: str = None):
     """
@@ -118,25 +148,7 @@ def post_to_thread(message: str, link: str = None):
         logger.error(f"❌ 網絡連線失敗: {str(e)}")
         return False, str(e)
 
-# 修改原本嘅 Post Endpoint
-@app.post("/api/news/{news_id}/post")
-def handle_social_post(news_id: int):
-    row = get_news_by_id(news_id)
-    if not row:
-        raise HTTPException(status_code=404, detail="搵唔到新聞")
-
-    # 組合貼文內容 (用翻譯後嘅標題同內容)
-    post_content = f"{row[3]}\n\n{row[4]}" # Translated Title + Content
-    source_url = row[7] # Source URL
-
-    # 執行發文
-    success, result = post_to_facebook(post_content, link=source_url)
-    
-    if success:
-        update_status(news_id, 'POSTED')
-        return {"status": "success", "fb_post_id": result}
-    else:
-        raise HTTPException(status_code=500, detail=f"發布失敗: {result}")
-    
 if __name__ == "__main__":
-    post_to_facebook("測試貼文內容", link="https://www.example.com")
+    message = "測試貼文內容"
+    photo_url = "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/Camponotus_flavomarginatus_ant.jpg/640px-Camponotus_flavomarginatus_ant.jpg"
+    post_to_instagram(message, photo_url)

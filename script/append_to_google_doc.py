@@ -31,7 +31,7 @@ def get_google_services():
 
     return build('docs', 'v1', credentials=creds), build('drive', 'v3', credentials=creds)
 
-def create_news_doc(title: str, content: str):
+def create_news_doc(title: str, content: str, image_url: str):
     """
     建立一個新的 Google Doc 並插入標題、圖片與內容
     """
@@ -67,13 +67,26 @@ def create_news_doc(title: str, content: str):
                 }
             },
             
+            # 插入圖片
+            {
+                'insertInlineImage': {
+                    'location': {'index': len(title) + 3},
+                    'uri': image_url,
+                    'objectSize': {
+                        'width': {'magnitude': 400, 'unit': 'PT'},
+                        'height': {'magnitude': 300, 'unit': 'PT'}
+                    }
+                }
+            },
             # 插入內文
             {
                 'insertText': {
-                    'location': {'index': len(title) + 3},
+                    'location': {'index': len(title) + 4},
                     'text': f"\n\n{content}"
                 }
             }
+
+
         ]
 
         # 3. 執行批次更新
@@ -122,4 +135,5 @@ def get_doc_text_content(document_id: str):
 if __name__ == "__main__":
     title = "利物浦歐聯"
     content = "這是新聞的詳細內容..."
-    create_news_doc(title, content)
+    image_url = "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/Camponotus_flavomarginatus_ant.jpg/640px-Camponotus_flavomarginatus_ant.jpg"
+    create_news_doc(title, content, image_url)

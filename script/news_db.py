@@ -1,6 +1,7 @@
 from datetime import datetime
 import os
 import psycopg2
+from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
 
 # Load .env from project root (works both when imported and run directly)

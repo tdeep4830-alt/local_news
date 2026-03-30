@@ -93,13 +93,65 @@ useEffect(() => {
   const handlePostToFacebook = async () => {
     setIsSubmitting(true)
     try {
-      const res = await apiFetch(`/api/news/${newsId}/post`, {
+      const res = await apiFetch(`/api/social/facebook/${newsId}`, {
         method: "POST",
       })
       if (!res) return
       if (res.ok) alert("✅ 已成功發布到 Facebook！")
     } catch (error) {
       console.error("Error posting to Facebook:", error)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handlePostToInstagram = async () => {
+    setIsSubmitting(true)
+    try {
+      const res = await apiFetch(`/api/social/instagram/${newsId}/`, {
+        method: "POST",
+      })
+      if (!res) return
+      if (res.ok) alert("✅ 已成功發布到 Facebook！")
+    } catch (error) {
+      console.error("Error posting to Facebook:", error)
+    } finally {
+      setIsSubmitting(false) 
+    }
+  }
+
+  const handlePublishAll = async () => {
+    // 先儲存目前的修改，確保發布的是最新內容 (非必須，但建議)
+    setIsSubmitting(true)
+    
+    try {
+      // 定義所有要執行的任務
+      const tasks = [
+        { name: "Google", url: `/api/social/google-doc/${newsId}`, method: "POST" },
+        { name: "Facebook", url: `/api/social/facebook/${newsId}`, method: "POST" },
+        { name: "Instagram", url: `/api/social/instagram/${newsId}/`, method: "POST" }
+      ]
+
+      // 同步執行所有請求
+      const results = await Promise.all(
+        tasks.map(task => 
+          apiFetch(task.url, { method: task.method })
+            .then(res => ({ name: task.name, ok: res?.ok }))
+            .catch(() => ({ name: task.name, ok: false }))
+        )
+      )
+
+      const failedTasks = results.filter(r => !r.ok).map(r => r.name)
+      
+      if (failedTasks.length === 0) {
+        alert("✅ 已成功發布到所有平台 (Google, FB, IG)！")
+      } else {
+        alert(`⚠️ 部份發布失敗: ${failedTasks.join(", ")}，請檢查後台。`)
+      }
+
+    } catch (error) {
+      console.error("Publish all failed:", error)
+      alert("❌ 發布過程中發生錯誤")
     } finally {
       setIsSubmitting(false)
     }
@@ -209,14 +261,15 @@ useEffect(() => {
             </Button>
             <Button 
               type="button" 
-              onClick={handlePostToFacebook} 
+              onClick={handlePublishAll} 
               variant="secondary" 
-              className="bg-green-600 hover:bg-green-700 text-white w-full" 
+              className="bg-indigo-600 hover:bg-indigo-700 text-white w-full" 
               disabled={isSubmitting || isSaving}
             >
-              <Send className="w-4 h-4 mr-2" /> {isSubmitting ? "發布中..." : "出 Post"}
+              <Send className="w-4 h-4 mr-2" /> {isSubmitting ? "發布中..." : "Post to Instagram"}
             </Button>
           </div>
+         
         </form>
       </CardContent>
     </Card>

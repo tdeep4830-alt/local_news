@@ -100,9 +100,10 @@ def process_news_item(item: dict, area: str, source: str, class_name: str) -> di
     
     if image_url:
         download_jpg(image_url, photo_name) # 用乾淨的檔名下載
-        downloads_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "downloads")
-        add_text_to_image_with_background(os.path.join(downloads_dir, f"{photo_name}.jpg"), result["shortened_title"], photo_name, breaking=0, source=source)
-        result["image"] = f"{photo_name}_with_title.jpg"
+        # 暫時唔用add_text_to_image_with_background的Function
+        # downloads_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "downloads")
+        # add_text_to_image_with_background(os.path.join(downloads_dir, f"{photo_name}.jpg"), result["shortened_title"], photo_name, breaking=0, source=source)
+        result["image"] = f"{photo_name}.jpg"
     else:
         result["image"] = ""
         
