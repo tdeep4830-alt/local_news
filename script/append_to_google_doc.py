@@ -4,6 +4,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 import os
 import sys
+import datetime
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from core.config import settings
 
@@ -95,11 +96,12 @@ def create_news_doc(title: str, content: str, image_url: str):
     建立一個新的 Google Doc 並插入標題、圖片與內容
     """
     docs_service, drive_service = get_authenticated_service()
+    date = datetime.now().isoformat()
 
     try:
         # 1. 透過 Drive API 建立一個空白的 Google Doc
         file_metadata = {
-            'name': f"新聞：{title}",
+            'name': f"{date} - 新聞：{title}",
             'mimeType': 'application/vnd.google-apps.document'
         }
         doc_file = drive_service.files().create(body=file_metadata, fields='id').execute()

@@ -77,4 +77,21 @@ def update_news(news_id: int, news: NewsCreate, current_user: str = Depends(get_
     return {"message": "更新成功"}
 
 
+@router.get("/month/{month_str}")
+def get_news_by_month(month_str: str, current_user: str = Depends(get_current_user)):
+    rows = db.get_news_count_by_month(month_str)
+    return [{"date": str(r[0]), "count": r[1]} for r in rows]
 
+@router.get("/date/{news_date}")
+def get_news_by_date(news_date: str, current_user: str = Depends(get_current_user)):
+    rows = db.get_news_by_date(news_date)
+    if not rows:
+        raise HTTPException(status_code=404, detail="No news found for this date")
+    return [{
+        "id": r[0], "title": r[3], "area": r[7], "status": r[10]
+    } for r in rows]
+
+@router.post("/reject/{news_id}")
+def reject_news(news_id: int, current_user: str = Depends(get_current_user)):
+    db.reject_news(news_id)
+    return {"message": "News rejected successfully"}

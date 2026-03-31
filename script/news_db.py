@@ -207,5 +207,51 @@ def get_id_by_link(source_url):
     conn.close()
     return row[0] if row else None
 
+def get_news_by_date(news_date):
+    """根據日期獲取新聞"""
+    conn = get_db_connection()
+    if conn is None:
+        return []
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM news WHERE created_at::date = %s", (news_date,))
+    rows = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return rows
+
+def get_news_count_by_month(month_str):
+    """返回指定月份每日新聞數量，month_str 格式: '2026-03'"""
+    conn = get_db_connection()
+    if conn is None:
+        return []
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT created_at::date AS date, COUNT(*) AS count
+        FROM news
+        WHERE TO_CHAR(created_at, 'YYYY-MM') = %s
+        GROUP BY created_at::date
+        ORDER BY date
+    """, (month_str,))
+    rows = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return rows
+
+def reject_news(news_id):
+    """拒絕新聞"""
+    conn = get_db_connection()
+    if conn is None:
+        return
+    try:
+        cursor = conn.cursor()
+        cursor.execute("UPDATE news SET status = 'rejected' WHERE id = %s", (news_id,))
+        conn.commit()
+        print(f"✅ News Rejected: ID {news_id}")
+    except Exception as e:
+        print(f"❌ Reject News Error: {e}")
+        conn.rollback()
+    finally:
+        conn.close()
+
 if __name__ == "__main__":
     init_db()

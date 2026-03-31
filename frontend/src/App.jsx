@@ -3,6 +3,8 @@ import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/s
 import { AppSidebar } from "@/layer/app-sidebar"
 import { NewsTable } from "@/layer/news_table"
 import { EditNewsFormWrapper } from "./pages/EditNewsPage"
+import { CalendarView } from "@/layer/calendar-view"
+import DateNewsPage from "@/pages/DateNewsPage"
 import ProtectedRoute from "@/components/ProtectedRoute"
 import LoginPage from "@/pages/LoginPage"
 import { Button } from "@/components/ui/button"
@@ -42,6 +44,8 @@ export default function App() {
                     <Route path="/" element={<NewsTable />} />
                     <Route path="/news" element={<NewsTable />} />
                     <Route path="/edit/:newsId" element={<EditNewsFormWrapper />} />
+                    <Route path="/calendar" element={<CalendarView />} />
+                    <Route path="/news/date/:date" element={<DateNewsPage />} />
                   </Routes>
                 </div>
               </SidebarInset>

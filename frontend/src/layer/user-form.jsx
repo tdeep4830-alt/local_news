@@ -75,16 +75,16 @@ useEffect(() => {
     }
   }
 
-  const handleAppendToGoogle = async () => {
+  const handleReject = async () => {
     setIsSubmitting(true)
     try {
-      const res = await apiFetch(`/api/news/${newsId}/google`, {
+      const res = await apiFetch(`/api/news/reject/${newsId}`, {
         method: "POST",
       })
       if (!res) return
-      if (res.ok) alert("✅ 已成功發布到 Google！")
+      if (res.ok) alert("✅ 已成功拒絕！")
     } catch (error) {
-      console.error("Error posting to Google:", error)
+      console.error("Error rejecting:", error)
     } finally {
       setIsSubmitting(false)
     }
@@ -235,24 +235,9 @@ useEffect(() => {
           </div>
 
           <div className="grid gap-2">
-            <Label>狀態 (Status)</Label>
-            <Select 
-              value={formData.status} // 2. 修正：用 value 而唔係 itemValue
-              onValueChange={(value) => setFormData({ ...formData, status: value })}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="選擇一個狀態" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  {status.map((item) => (
-                    <SelectItem key={item.value} value={item.value}>
-                      {item.label}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
+            <Button className="w-full bg-red-600 hover:bg-red-700 text-white" onClick={handleReject} disabled={isSaving}>
+              {isSaving ? "拒絕中..." : "拒絕"}
+            </Button>
           </div>
 
           <div className="flex flex-col gap-3">
