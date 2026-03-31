@@ -69,7 +69,7 @@ def handle_google_doc_post(news_id: int, current_user: str = Depends(get_current
     try:
         title = row[3] or 'No Title'
         content = row[5] or ''
-        image_url = row[6] if image_url else ""
+        image_url = row[6] or ""
         
         print(f"📄 [Social] 正在生成 Google Doc: {title[:20]}...")
         google_link = create_news_doc(title, content, image_url)

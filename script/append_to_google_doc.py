@@ -54,9 +54,11 @@ def get_google_services():
 
 def get_authenticated_service():
     """統一獲取服務的入口，優先使用環境變數"""
-    
+
     # 嘗試從環境變數讀取 (Render 環境)
     if settings.GOOGLE_REFRESH_TOKEN:
+        print(f"🔑 [Google] 使用環境變數 refresh token (長度: {len(settings.GOOGLE_REFRESH_TOKEN)})")
+        print(f"🔑 [Google] CLIENT_ID: {settings.GOOGLE_CLIENT_ID[:20] if settings.GOOGLE_CLIENT_ID else '未設定'}...")
         creds = Credentials(
             token=None,
             refresh_token=settings.GOOGLE_REFRESH_TOKEN,
@@ -67,19 +69,25 @@ def get_authenticated_service():
         )
     # 否則從本地 token.json 讀取 (開發環境)
     elif os.path.exists(_TOKEN_PATH):
+        print(f"🔑 [Google] 使用本地 token.json")
         creds = Credentials.from_authorized_user_file(_TOKEN_PATH, SCOPES)
     else:
-        # 如果都沒有，跑一次授權流程
+        print(f"🔑 [Google] 冇 token，跑 OAuth flow")
         flow = InstalledAppFlow.from_client_secrets_file(_CREDS_PATH, SCOPES)
         creds = flow.run_local_server(port=0)
         with open(_TOKEN_PATH, 'w') as token:
             token.write(creds.to_json())
 
     # 確保 Token 有效
+    print(f"🔍 [Google] creds.valid={creds.valid}, expired={creds.expired}, has_refresh={bool(creds.refresh_token)}")
     if not creds.valid:
         if creds.expired and creds.refresh_token:
+            print(f"🔄 [Google] Token 過期，嘗試 refresh...")
             creds.refresh(Request())
-            
+            print(f"✅ [Google] Token refresh 成功")
+        else:
+            print(f"❌ [Google] Token 無效且無法 refresh")
+
     return build('docs', 'v1', credentials=creds), build('drive', 'v3', credentials=creds)
 
 def create_news_doc(title: str, content: str, image_url: str):

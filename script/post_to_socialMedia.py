@@ -31,7 +31,7 @@ def post_to_facebook(message: str, link: str = None, photo_url: str = None):
     """
     page_id = os.getenv("FB_PAGE_ID")
     access_token = os.getenv("FB_PAGE_ACCESS_TOKEN")
-    print(access_token)
+
     
     url = f"https://graph.facebook.com/v25.0/{page_id}/feed"
     
