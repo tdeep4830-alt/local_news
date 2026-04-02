@@ -82,12 +82,12 @@ def get_authenticated_service():
     # 確保 Token 有效
     print(f"🔍 [Google] creds.valid={creds.valid}, expired={creds.expired}, has_refresh={bool(creds.refresh_token)}")
     if not creds.valid:
-        if creds.expired and creds.refresh_token:
-            print(f"🔄 [Google] Token 過期，嘗試 refresh...")
+        if creds.refresh_token:
+            print(f"🔄 [Google] 嘗試 refresh token...")
             creds.refresh(Request())
             print(f"✅ [Google] Token refresh 成功")
         else:
-            print(f"❌ [Google] Token 無效且無法 refresh")
+            print(f"❌ [Google] 冇 refresh token，無法取得有效憑證")
 
     return build('docs', 'v1', credentials=creds), build('drive', 'v3', credentials=creds)
 
@@ -96,7 +96,7 @@ def create_news_doc(title: str, content: str, image_url: str):
     建立一個新的 Google Doc 並插入標題、圖片與內容
     """
     docs_service, drive_service = get_authenticated_service()
-    date = datetime.now().isoformat()
+    date = datetime.datetime.now().strftime("%Y-%m-%d")
 
     try:
         # 1. 透過 Drive API 建立一個空白的 Google Doc

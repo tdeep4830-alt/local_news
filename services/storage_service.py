@@ -4,6 +4,7 @@ import cloudinary.uploader
 from core.config import settings
 import requests
 
+
 cloudinary.config(
     cloud_name=settings.CLOUDINARY_CLOUD_NAME,
     api_key=settings.CLOUDINARY_API_KEY,
@@ -32,3 +33,9 @@ def upload_image_to_supabase(image_url: str, file_name: str):
     except Exception as e:
         print(f"❌ [Storage] 上傳失敗: {e}")
         return None
+
+if __name__ == "__main__":
+    # 測試上傳功能
+    test_image_url = "https://example.com/test.jpg"
+    test_file_name = "test_image"
+    upload_image_to_supabase(test_image_url, test_file_name)
