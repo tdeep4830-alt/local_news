@@ -226,7 +226,9 @@ def get_news_count_by_month(month_str):
         return []
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT created_at::date AS date, COUNT(*) AS count
+        SELECT created_at::date AS date,
+               COUNT(*) AS count,
+               COUNT(*) FILTER (WHERE status = 'PENDING') AS pending
         FROM news
         WHERE TO_CHAR(created_at, 'YYYY-MM') = %s
         GROUP BY created_at::date

@@ -62,7 +62,7 @@ def get_one_news(news_id: int, current_user: str = Depends(get_current_user)):
     if not row:
         raise HTTPException(status_code=404, detail="搵唔到呢條新聞")
     # 這裡也要對應你的 DB 結構
-    return {"id": row[0], "o_title": row[1], "t_title": row[3], "t_content": row[5], "img_path": row[6], "area": row[7], "o_url": row[9], "status": row[10]}
+    return {"id": row[0], "o_title": row[1], "t_title": row[3], "t_content": row[5], "img_path": row[6], "area": row[7], "o_url": row[9], "status": row[10], "created_at": str(row[11])[:10] if row[11] else None}
 
 
 @router.put("/{news_id}")
@@ -80,7 +80,7 @@ def update_news(news_id: int, news: NewsCreate, current_user: str = Depends(get_
 @router.get("/month/{month_str}")
 def get_news_by_month(month_str: str, current_user: str = Depends(get_current_user)):
     rows = db.get_news_count_by_month(month_str)
-    return [{"date": str(r[0]), "count": r[1]} for r in rows]
+    return [{"date": str(r[0]), "count": r[1], "pending": r[2]} for r in rows]
 
 @router.get("/date/{news_date}")
 def get_news_by_date(news_date: str, current_user: str = Depends(get_current_user)):

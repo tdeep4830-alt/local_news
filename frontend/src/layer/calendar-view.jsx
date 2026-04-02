@@ -28,7 +28,7 @@ export function CalendarView() {
         const data = await res.json()
         // data: [{ date: "2026-03-31", count: 5, titles: [...] }]
         const mapped = data.map(item => ({
-          title: `${item.count} 篇新聞`,
+          title: item.pending > 0 ? `${item.count} 篇新聞 (${item.pending} 待處理)` : `${item.count} 篇新聞`,
           start: new Date(item.date + "T00:00:00"),
           end: new Date(item.date + "T00:00:00"),
           allDay: true,

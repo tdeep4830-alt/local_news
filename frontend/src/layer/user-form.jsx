@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 import { apiFetch } from "@/api/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,6 +11,7 @@ import { Send } from "lucide-react"
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 export function EditNewsForm({ newsId }) {
+  const navigate = useNavigate()
   const [formData, setFormData] = useState({
     o_title: "",
     o_content: "",
@@ -142,12 +144,16 @@ useEffect(() => {
       )
 
       const failedTasks = results.filter(r => !r.ok).map(r => r.name)
-      
+
       if (failedTasks.length === 0) {
         alert("✅ 已成功發布到所有平台 (Google, FB, IG)！")
       } else {
         alert(`⚠️ 部份發布失敗: ${failedTasks.join(", ")}，請檢查後台。`)
       }
+
+      const date = formData.created_at
+      if (date) navigate(`/news/date/${date}`)
+      else navigate("/calendar")
 
     } catch (error) {
       console.error("Publish all failed:", error)

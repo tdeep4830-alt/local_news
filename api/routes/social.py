@@ -51,6 +51,7 @@ def handle_instagram_post(news_id: int, current_user: str = Depends(get_current_
         raise HTTPException(status_code=400, detail="呢條新聞冇圖片，無法發布到 Instagram")
 
     print(f"📸 [Social] 正在為用戶 {current_user} 發布 IG Post: {title[:20]}...")
+    print(f"📸 [Social] image_url: {repr(image_url)}")
     success, result = post_to_instagram(message, image_url)
 
     if success:
