@@ -21,3 +21,4 @@ pytest
 httpx
 psycopg2-binary
 supabase
+cloudinary

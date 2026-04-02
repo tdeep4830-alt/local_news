@@ -77,13 +77,18 @@ def post_to_instagram(message: str, image_url: str):
     
     payload = {
         "image_url": image_url,
+        "media_type": "IMAGE",
         "caption": message,
         "access_token": access_token
     }
 
     try:
         # 1. 請求建立容器
-        response = requests.post(container_url, data=payload)
+        logger.info(f"🔍 container_url: {container_url}")
+        logger.info(f"🔍 image_url: {repr(image_url)}")
+        logger.info(f"🔍 user_id: {repr(user_id)}")
+        response = requests.post(container_url, params=payload)
+        logger.info(f"🔍 request url: {response.request.url}")
         res_data = response.json()
 
         if response.status_code != 200:
@@ -103,7 +108,7 @@ def post_to_instagram(message: str, image_url: str):
             "access_token": access_token
         }
 
-        publish_response = requests.post(publish_url, data=publish_payload)
+        publish_response = requests.post(publish_url, params=publish_payload)
         publish_data = publish_response.json()
 
         if publish_response.status_code == 200:
@@ -151,5 +156,5 @@ def post_to_thread(message: str, link: str = None):
 
 if __name__ == "__main__":
     message = "測試貼文內容"
-    photo_url = "https://www.manchestereveningnews.co.uk/news/greater-manchester-news/manchester-united-fans-warned-new-33686663"
-    post_to_facebook(message, photo_url)
+    photo_url = "https://iwmzydqwcnwmaauegooz.supabase.co/storage/v1/object/public/images/f93a7910-e1eb-4240-b571-079916ba9e55_Tributes_pour_in_as_beautiful_man_dies_after_brutal_attack_outside_Irlam_pub.jpg"
+    post_to_instagram(message, photo_url)

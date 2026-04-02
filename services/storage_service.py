@@ -1,32 +1,31 @@
 # services/storage_service.py
-from supabase import create_client, Client
+import cloudinary
+import cloudinary.uploader
 from core.config import settings
-import uuid
 import requests
 
-supabase: Client = create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
+cloudinary.config(
+    cloud_name=settings.CLOUDINARY_CLOUD_NAME,
+    api_key=settings.CLOUDINARY_API_KEY,
+    api_secret=settings.CLOUDINARY_API_SECRET,
+)
 
 def upload_image_to_supabase(image_url: str, file_name: str):
-    """從 URL 下載圖片並上傳到 Supabase，返回 Public URL"""
+    """從 URL 下載圖片並上傳到 Cloudinary，返回 Public URL"""
     try:
-        bucket_name = "images"
-
-        # 1. 從 URL 下載圖片到記憶體
+        # 下載圖片到記憶體
         response = requests.get(image_url, timeout=15)
         response.raise_for_status()
-        image_bytes = response.content
 
-        # 2. 上傳到 Supabase
-        unique_name = f"{uuid.uuid4()}_{file_name}.jpg"
-        supabase.storage.from_(bucket_name).upload(
-            path=unique_name,
-            file=image_bytes,
-            file_options={"content-type": "image/jpeg"}
+        # 上傳到 Cloudinary
+        result = cloudinary.uploader.upload(
+            response.content,
+            public_id=file_name,
+            overwrite=True,
+            resource_type="image",
         )
 
-        # 3. 獲取 Public URL
-        public_url = supabase.storage.from_(bucket_name).get_public_url(unique_name)
-
+        public_url = result.get("secure_url")
         print(f"✅ [Storage] 上傳成功: {public_url}")
         return public_url
 
