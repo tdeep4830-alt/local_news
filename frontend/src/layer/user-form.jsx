@@ -65,9 +65,15 @@ useEffect(() => {
     setIsSaving(true)
     try {
       // 呢度會一次過將包含 breaking (0/1) 的 formData 傳去 Backend
+      const payload = {
+        ...formData,
+        source_url: formData.source_url || formData.o_url || "",
+        o_content: formData.o_content || "",
+        status: formData.status || "PENDING",
+      }
       const res = await apiFetch(`/api/news/${newsId}`, {
         method: "PUT",
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       })
       if (res.ok) alert("✅ 資料已更新！")
     } catch (error) {
@@ -127,9 +133,15 @@ useEffect(() => {
 
     try {
       // 先儲存最新版本
+      const savePayload = {
+        ...formData,
+        source_url: formData.source_url || formData.o_url || "",
+        o_content: formData.o_content || "",
+        status: formData.status || "PENDING",
+      }
       const saveRes = await apiFetch(`/api/news/${newsId}`, {
         method: "PUT",
-        body: JSON.stringify(formData),
+        body: JSON.stringify(savePayload),
       })
       if (!saveRes?.ok) {
         alert("❌ 儲存失敗，發布已取消")
