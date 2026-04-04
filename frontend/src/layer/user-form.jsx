@@ -123,10 +123,19 @@ useEffect(() => {
   }
 
   const handlePublishAll = async () => {
-    // 先儲存目前的修改，確保發布的是最新內容 (非必須，但建議)
     setIsSubmitting(true)
-    
+
     try {
+      // 先儲存最新版本
+      const saveRes = await apiFetch(`/api/news/${newsId}`, {
+        method: "PUT",
+        body: JSON.stringify(formData),
+      })
+      if (!saveRes?.ok) {
+        alert("❌ 儲存失敗，發布已取消")
+        return
+      }
+
       // 定義所有要執行的任務
       const tasks = [
         { name: "Google", url: `/api/social/google-doc/${newsId}`, method: "POST" },

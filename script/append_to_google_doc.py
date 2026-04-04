@@ -91,6 +91,28 @@ def get_authenticated_service():
 
     return build('docs', 'v1', credentials=creds), build('drive', 'v3', credentials=creds)
 
+def get_or_create_date_folder(drive_service, date: str) -> str:
+    """搵或建立當日日期的 Google Drive Folder，返回 folder_id"""
+    # 搜尋同名 folder
+    query = f"name='{date}' and mimeType='application/vnd.google-apps.folder' and trashed=false"
+    results = drive_service.files().list(q=query, fields="files(id, name)").execute()
+    folders = results.get("files", [])
+
+    if folders:
+        folder_id = folders[0]["id"]
+        print(f"📁 [Google] 找到現有 Folder: {date} (ID: {folder_id})")
+    else:
+        folder_metadata = {
+            "name": date,
+            "mimeType": "application/vnd.google-apps.folder"
+        }
+        folder = drive_service.files().create(body=folder_metadata, fields="id").execute()
+        folder_id = folder.get("id")
+        print(f"📁 [Google] 新建 Folder: {date} (ID: {folder_id})")
+
+    return folder_id
+
+
 def create_news_doc(title: str, content: str, image_url: str):
     """
     建立一個新的 Google Doc 並插入標題、圖片與內容
@@ -99,10 +121,14 @@ def create_news_doc(title: str, content: str, image_url: str):
     date = datetime.datetime.now().strftime("%Y-%m-%d")
 
     try:
-        # 1. 透過 Drive API 建立一個空白的 Google Doc
+        # 1. 搵或建立當日 Folder
+        folder_id = get_or_create_date_folder(drive_service, date)
+
+        # 2. 透過 Drive API 建立一個空白的 Google Doc，放入 Folder
         file_metadata = {
             'name': f"{date} - 新聞：{title}",
-            'mimeType': 'application/vnd.google-apps.document'
+            'mimeType': 'application/vnd.google-apps.document',
+            'parents': [folder_id]
         }
         doc_file = drive_service.files().create(body=file_metadata, fields='id').execute()
         document_id = doc_file.get('id')
